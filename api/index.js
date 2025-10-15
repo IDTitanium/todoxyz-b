@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { db } from './db.js';
 import authMiddleware from './authMiddleware.js';
 import { Todos, Users } from './models.js';
+import serverless from 'serverless-http';
 
 
 const app = express();
@@ -102,8 +103,11 @@ db.exec(`
 `);
 
 // --- START SERVER (Vercel-friendly) ---
-if (process.env.VERCEL) {
-  module.exports = app; // for Vercel serverless
-} else {
-  app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
-}
+// if (process.env.VERCEL) {
+//   export default serverless(app);
+//  // for Vercel serverless
+// } else {
+//   app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+// }
+
+export default serverless(app);
