@@ -8,9 +8,11 @@ import { Todos, Users } from '../models.js';
 import serverless from 'serverless-http';
 
 
+
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb', strict: false, verify: (req, res, buf) => { req.rawBody = buf } }));
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
 const PORT = process.env.PORT || 3000;
@@ -109,5 +111,10 @@ db.exec(`
 // } else {
 //   app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
 // }
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export default serverless(app);
