@@ -1,120 +1,29 @@
-import express from 'express';
-import cors from 'cors';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { db } from '../db.js';
 import authMiddleware from '../authMiddleware.js';
-import { Todos, Users } from '../models.js';
-import serverless from 'serverless-http';
+import { Todos } from '../models.js';
 
+export default async function handler(req, res) {
+  const user = await new Promise((resolve, reject) => {
+    authMiddleware({ headers: req.headers }, { sendStatus: (code) => reject(code) }, (err) => {
+      if (err) reject(err);
+      else resolve(req.user);
+    });
+  }).catch((code) => {
+    res.sendStatus(code);
+    return null;
+  });
 
+  if (!user) return;
 
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '1mb', strict: false, verify: (req, res, buf) => { req.rawBody = buf } }));
-
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
-const PORT = process.env.PORT || 3000;
-
-// --- AUTH ROUTES ---
-
-// Register user
-app.post('/register', (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const existing = Users.findByUsername(username);
-    if (existing) {
-      return res.status(400).json({ error: 'Username already exists' });
-    }
-
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const userId = Users.create(username, hashedPassword);
-    res.status(201).json({ message: 'User created successfully', userId });
-  } catch (err) {
-    res.status(400).json({ error: 'Invalid data' });
-  }
-});
-
-// Login user
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = Users.findByUsername(username);
-
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
+  if (req.method === 'GET') {
+    const todos = Todos.findAllByUser(user.userId);
+    return res.json(todos);
   }
 
-  const isPasswordValid = bcrypt.compareSync(password, user.password);
-  if (!isPasswordValid) {
-    return res.status(401).json({ error: 'Invalid password' });
+  if (req.method === 'POST') {
+    const { task } = req.body;
+    const todo = Todos.create(user.userId, task);
+    return res.status(201).json(todo);
   }
 
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token });
-});
-
-// --- TODO ROUTES (Protected) ---
-
-app.get('/todos', authMiddleware, (req, res) => {
-  const todos = Todos.findAllByUser(req.user.userId);
-  res.json(todos);
-});
-
-app.post('/todos', authMiddleware, (req, res) => {
-  const { task } = req.body;
-  const todo = Todos.create(req.user.userId, task);
-  res.status(201).json(todo);
-});
-
-app.put('/todos/:id', authMiddleware, (req, res) => {
-  const todo = Todos.findTodoById(req.params.id);
-  if (!todo || todo.userId !== req.user.userId) {
-    return res.status(404).json({ error: 'Todo not found or not owned by user' });
-  }
-
-  const updated = Todos.toggleComplete(req.params.id, req.body);
-  res.json(updated);
-});
-
-app.delete('/todos/:id', authMiddleware, (req, res) => {
-  const todo = Todos.findTodoById(req.params.id);
-  if (!todo || todo.userId !== req.user.userId) {
-    return res.status(404).json({ error: 'Todo not found or not owned by user' });
-  }
-
-  Todos.delete(req.params.id);
-  res.sendStatus(204);
-});
-
-// --- CREATE TABLES (RUN ONCE) ---
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task TEXT NOT NULL,
-    completed INTEGER DEFAULT 0,
-    userId INTEGER,
-    FOREIGN KEY (userId) REFERENCES users(id)
-  );
-`);
-
-// --- START SERVER (Vercel-friendly) ---
-// if (process.env.VERCEL) {
-//   export default serverless(app);
-//  // for Vercel serverless
-// } else {
-//   app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
-// }
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default serverless(app);
+  res.status(405).json({ error: 'Method not allowed' });
+}

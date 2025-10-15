@@ -8,7 +8,7 @@ export default function authMiddleware(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN"
 
   if (!token) {
-    return res.sendStatus(401); // Unauthorized
+    return res.status(401).end(); // Unauthorized
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
