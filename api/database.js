@@ -3,7 +3,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 // 1. Initialize Sequelize with SQLite
 const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: './database.sqlite' // This will create a file named database.sqlite
+    storage: './db.sqlite' // This will create a file named database.sqlite
 });
 
 // 2. Define the User model
