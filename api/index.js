@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 // --- AUTH ROUTES ---
 
 // Register user
-app.post('/api/register', (req, res) => {
+app.post('/register', (req, res) => {
   try {
     const { username, password } = req.body;
     const existing = Users.findByUsername(username);
@@ -35,7 +35,7 @@ app.post('/api/register', (req, res) => {
 });
 
 // Login user
-app.post('/api/login', (req, res) => {
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const user = Users.findByUsername(username);
 
@@ -54,18 +54,18 @@ app.post('/api/login', (req, res) => {
 
 // --- TODO ROUTES (Protected) ---
 
-app.get('/api/todos', authMiddleware, (req, res) => {
+app.get('/todos', authMiddleware, (req, res) => {
   const todos = Todos.findAllByUser(req.user.userId);
   res.json(todos);
 });
 
-app.post('/api/todos', authMiddleware, (req, res) => {
+app.post('/todos', authMiddleware, (req, res) => {
   const { task } = req.body;
   const todo = Todos.create(req.user.userId, task);
   res.status(201).json(todo);
 });
 
-app.put('/api/todos/:id', authMiddleware, (req, res) => {
+app.put('/todos/:id', authMiddleware, (req, res) => {
   const todo = Todos.findTodoById(req.params.id);
   if (!todo || todo.userId !== req.user.userId) {
     return res.status(404).json({ error: 'Todo not found or not owned by user' });
@@ -75,7 +75,7 @@ app.put('/api/todos/:id', authMiddleware, (req, res) => {
   res.json(updated);
 });
 
-app.delete('/api/todos/:id', authMiddleware, (req, res) => {
+app.delete('/todos/:id', authMiddleware, (req, res) => {
   const todo = Todos.findTodoById(req.params.id);
   if (!todo || todo.userId !== req.user.userId) {
     return res.status(404).json({ error: 'Todo not found or not owned by user' });
