@@ -3,7 +3,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../db.js';
-import authMiddleware from './authMiddleware.js';
+import authMiddleware from '../authMiddleware.js';
 import { Todos, Users } from '../models.js';
 import serverless from 'serverless-http';
 
